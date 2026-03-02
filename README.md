@@ -88,8 +88,10 @@ repo/
 ├── api/                      # FastAPI backend
 │   ├── app/
 │   │   ├── main.py           # App factory — sastavlja aplikaciju
+│   │   ├── seed.py           # Seed podaci (admin + demo klub)
 │   │   ├── core/             # Infrastruktura (config, errors, logging)
 │   │   │   ├── config.py     # Pydantic Settings — čita env varijable
+│   │   │   ├── database.py   # SQLAlchemy engine, session, Base
 │   │   │   ├── errors.py     # AppError + globalni exception handler
 │   │   │   ├── logging.py    # Konfiguracija logiranja
 │   │   │   └── deps.py       # FastAPI dependencije (DB session, auth)
@@ -98,6 +100,11 @@ repo/
 │   │   ├── repositories/     # DB upiti (SQL, transakcije)
 │   │   ├── models/           # SQLAlchemy ORM modeli (tablice)
 │   │   └── schemas/          # Pydantic DTO-ovi (ulaz/izlaz API-ja)
+│   ├── alembic/              # Alembic migracije
+│   │   ├── env.py            # Konfiguracija migracijskog okruženja
+│   │   ├── script.py.mako    # Template za nove migracije
+│   │   └── versions/         # Migracijske datoteke
+│   ├── alembic.ini           # Alembic konfiguracija
 │   ├── tests/
 │   ├── requirements.txt
 │   └── pyproject.toml
@@ -170,6 +177,87 @@ Scope: `api`, `web`, ili prazan za root-level promjene.
 
 ---
 
+## Baza podataka — workflow
+
+### Modeli (ORM)
+
+SQLAlchemy modeli žive u `api/app/models/`. Svaki model je Python klasa
+koja odgovara jednoj tablici u bazi:
+
+| Model | Tablica | Opis |
+|-------|---------|------|
+| `Club`  | `clubs`  | Powerlifting klub (name, city) |
+| `User`  | `users`  | Korisnik sustava (admin ili club user) |
+
+Relacija: `Club 1 → N User` (jedan klub ima jednog ili više korisnika).
+Admin korisnik ima `club_id = NULL`.
+
+### Migracije (Alembic)
+
+Alembic je "version control za bazu" — svaka promjena modela zahtijeva novu migraciju.
+
+```bash
+cd api
+
+# Primijeni sve migracije (kreira tablice):
+alembic upgrade head
+
+# Rollback zadnje migracije:
+alembic downgrade -1
+
+# Generiraj novu migraciju nakon promjene modela:
+alembic revision --autogenerate -m "opis promjene"
+
+# Prikaži povijest migracija:
+alembic history
+```
+
+> **Važno:** Uvijek pročitaj generiranu migraciju prije `upgrade`!
+> Autogenerate može pogriješiti (npr. rename stupca → drop + create).
+
+### Seed podaci
+
+Seed skripta kreira inicijalne podatke za razvoj:
+
+```bash
+cd api
+python -m app.seed
+```
+
+Kreira:
+- **Admin user:** `admin@pl.local` / `admin123` (role=admin, bez kluba)
+- **Demo klub:** Behemot (Zadar)
+- **Club user:** `klub@pl.local` / `klub123` (role=club, klub Behemot)
+
+Skripta je **idempotentna** — sigurno je pokrenuti je više puta
+(preskače zapise koji već postoje).
+
+### Potpuni reset baze
+
+Kad želiš krenuti ispočetka (briše SVE podatke):
+
+```bash
+docker compose down -v           # Obriši kontejner + volume
+docker compose up -d db          # Pokreni svježu bazu
+cd api
+alembic upgrade head             # Kreiraj tablice
+python -m app.seed               # Umetni seed podatke
+```
+
+### Direktan pristup bazi (psql)
+
+```bash
+docker exec -it rwapred1-db-1 psql -U pl_user -d pl_reg
+
+# Korisni SQL upiti:
+# \dt                            — lista tablica
+# SELECT * FROM clubs;           — pregled klubova
+# SELECT id, email, role FROM users;  — pregled korisnika
+# \q                             — izlaz
+```
+
+---
+
 ## Korisne naredbe
 
 ```bash
@@ -185,6 +273,12 @@ uvicorn app.main:app --reload    # Dev server s auto-reloadom
 pytest                           # Pokreni testove
 ruff check .                     # Lint (provjera kvalitete koda)
 black .                          # Format (automatsko formatiranje)
+
+# -- Migracije --
+alembic upgrade head             # Primijeni sve migracije
+alembic downgrade -1             # Rollback zadnje migracije
+alembic revision --autogenerate -m "opis"  # Nova migracija
+python -m app.seed               # Seed podatke u bazu
 
 # -- Git --
 git log --oneline --decorate     # Kratki pregled povijesti
