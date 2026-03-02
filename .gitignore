@@ -56,10 +56,6 @@ web/dist/
 .coverage
 htmlcov/
 
-# =============================================
-# Profesorske datoteke (nisu dio studentskog projekta)
-# =============================================
 *.tex
 *.pdf
 Projekt.md
-SIT_logo_tekst1.pdf
