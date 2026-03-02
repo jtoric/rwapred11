@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -54,10 +54,10 @@ class User(Base):
 
     # Foreign key prema clubs tablici.
     # nullable=True jer admin korisnik ne pripada nijednom klubu.
-    club_id: Mapped[int | None] = mapped_column(
+    club_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("clubs.id"), nullable=True
     )
 
     # ORM relationship — omogućuje user.club umjesto ručnog querya.
-    club: Mapped[Club | None] = relationship(back_populates="users")
+    club: Mapped[Optional[Club]] = relationship(back_populates="users")
 

@@ -16,7 +16,7 @@
 #   - Resursi se automatski zatvaraju nakon requesta
 # =============================================================
 
-from collections.abc import AsyncGenerator
+from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

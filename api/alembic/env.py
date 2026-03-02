@@ -15,13 +15,20 @@
 # =============================================================
 
 import asyncio
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
-from alembic import context
-from sqlalchemy.ext.asyncio import create_async_engine
+# Dodajemo api/ direktorij na sys.path tako da Alembic može
+# importirati "app" paket. Bez ovoga: ModuleNotFoundError.
+# Path(__file__) → alembic/env.py → .parent.parent → api/
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.core.config import settings
-from app.models import Base  # noqa: F401 — registrira sve modele
+from alembic import context  # noqa: E402
+from sqlalchemy.ext.asyncio import create_async_engine  # noqa: E402
+
+from app.core.config import settings  # noqa: E402
+from app.models import Base  # noqa: E402, F401 — registrira sve modele
 
 # Alembic Config objekt — daje pristup .ini vrijednostima.
 config = context.config
