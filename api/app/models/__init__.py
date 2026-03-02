@@ -4,15 +4,20 @@
 # Ovdje importiramo Base i sve modele na jedno mjesto.
 # Zašto?
 #   1. Alembic čita Base.metadata da bi znao koje tablice postoje
-#   2. Centralni import — lakše upravljanje modelima
+#   2. Centralni import — umjesto:
+#        from app.models.club import Club
+#        from app.models.user import User
+#      možemo pisati:
+#        from app.models import Club, User
 #   3. Osiguravamo da su svi modeli "registrirani" u Base.metadata
 #      prije nego Alembic pokuša generirati migraciju
 #
-# Korištenje:
-#   from app.models import Base          # za Alembic env.py
-#   from app.models import Club, User    # dolazi u sljedećem commitu
+# VAŽNO: svaki novi model MORA biti importiran ovdje,
+# inače ga Alembic neće vidjeti pri autogenerate!
 # =============================================================
 
 from app.core.database import Base
+from app.models.club import Club
+from app.models.user import User
 
-__all__ = ["Base"]
+__all__ = ["Base", "Club", "User"]
