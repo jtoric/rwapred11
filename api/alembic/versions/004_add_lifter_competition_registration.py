@@ -48,6 +48,7 @@ def upgrade() -> None:
         sa.Column("lifter_id", sa.Integer, sa.ForeignKey("lifters.id"), nullable=False),
         sa.Column("competition_id", sa.Integer, sa.ForeignKey("competitions.id"), nullable=False),
         sa.Column("category", sa.String(20), nullable=False),
+        sa.Column("total", sa.Integer, nullable=False, server_default="0"),
         sa.Column("status", sa.String(20), server_default="active"),
         sa.Column("registered_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.UniqueConstraint("lifter_id", "competition_id", name="uq_lifter_competition"),
