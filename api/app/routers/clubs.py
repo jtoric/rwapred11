@@ -46,8 +46,8 @@ async def list_clubs(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("admin", "club")),
 ):
-    """Lista klubova (ownership filtriranje dolazi u sljedećem commitu)."""
-    clubs = await club_service.list_clubs(db)
+    """Admin vidi sve klubove, club korisnik vidi samo svoj."""
+    clubs = await club_service.list_clubs(db, user)
     return [_club_response(c) for c in clubs]
 
 
@@ -57,8 +57,8 @@ async def get_club(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_role("admin", "club")),
 ):
-    """Detalji kluba (ownership provjera dolazi u sljedećem commitu)."""
-    club = await club_service.get_club(db, club_id)
+    """Detalji kluba s ownership provjerom."""
+    club = await club_service.get_club(db, club_id, user)
     return _club_response(club)
 
 

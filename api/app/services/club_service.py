@@ -59,16 +59,21 @@ async def create_club(db: AsyncSession, name: str, city: str, password: str,
     return club, user
 
 
-async def list_clubs(db: AsyncSession) -> list[Club]:
-    """Dohvati sve klubove."""
-    return await club_repo.get_all(db)
+async def list_clubs(db: AsyncSession, current_user: User) -> list[Club]:
+    """Admin vidi sve klubove, club korisnik vidi samo svoj."""
+    if current_user.role == "admin":
+        return await club_repo.get_all(db)
+    club = await club_repo.get_by_id(db, current_user.club_id)
+    return [club] if club else []
 
 
-async def get_club(db: AsyncSession, club_id: int) -> Club:
-    """Dohvati klub po ID-u ili baci 404."""
+async def get_club(db: AsyncSession, club_id: int, current_user: User) -> Club:
+    """Dohvati klub po ID-u. Club korisnik smije vidjeti samo svoj klub."""
     club = await club_repo.get_by_id(db, club_id)
     if not club:
         raise AppError("not_found", "Klub nije pronađen", 404)
+    if current_user.role == "club" and current_user.club_id != club_id:
+        raise AppError("forbidden", "Ne možete pristupiti podacima drugog kluba", 403)
     return club
 
 
