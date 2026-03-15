@@ -67,11 +67,17 @@ async def list_clubs(db: AsyncSession, current_user: User) -> list[Club]:
     return [club] if club else []
 
 
-async def get_club(db: AsyncSession, club_id: int, current_user: User) -> Club:
-    """Dohvati klub po ID-u. Club korisnik smije vidjeti samo svoj klub."""
+async def _get_or_404(db: AsyncSession, club_id: int) -> Club:
+    """Interni helper: dohvati klub ili baci 404."""
     club = await club_repo.get_by_id(db, club_id)
     if not club:
         raise AppError("not_found", "Klub nije pronađen", 404)
+    return club
+
+
+async def get_club(db: AsyncSession, club_id: int, current_user: User) -> Club:
+    """Dohvati klub po ID-u. Club korisnik smije vidjeti samo svoj klub."""
+    club = await _get_or_404(db, club_id)
     if current_user.role == "club" and current_user.club_id != club_id:
         raise AppError("forbidden", "Ne možete pristupiti podacima drugog kluba", 403)
     return club
@@ -81,7 +87,7 @@ async def update_club(db: AsyncSession, club_id: int,
                       name: str | None, city: str | None,
                       contact_email: str | None, contact_phone: str | None) -> Club:
     """Admin ažurira podatke kluba (parcijalni update)."""
-    club = await get_club(db, club_id)
+    club = await _get_or_404(db, club_id)
 
     if name is not None and name != club.name:
         existing = await club_repo.get_by_name(db, name)
@@ -101,7 +107,7 @@ async def update_club(db: AsyncSession, club_id: int,
 
 async def reset_password(db: AsyncSession, club_id: int, new_password: str) -> None:
     """Admin postavlja novu lozinku za login korisnika kluba."""
-    club = await get_club(db, club_id)
+    club = await _get_or_404(db, club_id)
     if not club.users:
         raise AppError("not_found", "Klub nema korisnika", 404)
     club.users[0].password_hash = hash_password(new_password)

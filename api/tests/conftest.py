@@ -116,6 +116,27 @@ async def club_and_user(db: AsyncSession) -> tuple[Club, User]:
 
 
 @pytest.fixture
+async def club_b_and_user(db: AsyncSession) -> tuple[Club, User]:
+    """Drugi klub za cross-club ownership testove."""
+    club = Club(name="RivalClub", city="RivalCity")
+    db.add(club)
+    await db.flush()
+
+    user = User(
+        username="rivalclub",
+        password_hash=hash_password("rival123"),
+        role="club",
+        club_id=club.id,
+        is_active=True,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    await db.refresh(club)
+    return club, user
+
+
+@pytest.fixture
 async def inactive_user(db: AsyncSession) -> User:
     """Deaktivirani korisnik za testiranje is_active provjere."""
     user = User(
