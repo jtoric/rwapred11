@@ -39,12 +39,13 @@ asyncpg>=0.30,<1.0
 alembic>=1.14,<2.0
 
 # -- Autentikacija (dolazi u predavanju 3) --
-# passlib — hashiranje lozinki (bcrypt algoritam).
+# bcrypt — hashiranje lozinki (direktno, bez passlib wrappera).
 # python-jose — generiranje i validacija JWT tokena.
-passlib[bcrypt]>=1.7,<2.0
+bcrypt>=4.1,<5.0
 python-jose[cryptography]>=3.3,<4.0
 
 # -- Testiranje --
 httpx>=0.28,<1.0
 pytest>=8.3,<9.0
 pytest-asyncio>=0.25,<1.0
+freezegun>=1.4,<2.0
