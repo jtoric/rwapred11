@@ -11,9 +11,10 @@
 #   - role je String (ne Enum) — jednostavnije za početak,
 #     validacija se radi u Pydantic schema sloju
 #   - club_id je nullable: admin NEMA klub (club_id = NULL)
-#   - email je UNIQUE: sprječava duplicirane loginove i
-#     štiti od race conditiona pri registraciji
+#   - username je UNIQUE: sprječava duplicirane loginove
+#     (za club usere auto-generiran iz naziva kluba)
 #   - password_hash: NIKAD ne spremamo lozinku u čistom tekstu!
+#   - is_active: omogućuje deaktivaciju korisnika bez brisanja
 # =============================================================
 
 from __future__ import annotations
@@ -35,9 +36,10 @@ class User(Base):
 
     Atributi:
         id:            Surrogate primary key.
-        email:         Login email (jedinstven u sustavu).
+        username:      Login korisničko ime (jedinstven u sustavu).
         password_hash: Bcrypt hash lozinke (NIKAD plain text).
         role:          "admin" ili "club".
+        is_active:     Može li se korisnik prijaviti.
         club_id:       FK prema klubu (NULL za admine).
 
     Relacije:
@@ -48,9 +50,10 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
 
     # Foreign key prema clubs tablici.
     # nullable=True jer admin korisnik ne pripada nijednom klubu.

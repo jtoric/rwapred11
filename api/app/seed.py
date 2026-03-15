@@ -12,7 +12,7 @@
 #   - Za testiranje auth/ownership logike (predavanje 3-4)
 #
 # Idempotentnost:
-#   Skripta provjerava postoji li već zapis s istim emailom/imenom.
+#   Skripta provjerava postoji li već zapis s istim username/imenom.
 #   Ako postoji — preskače. Sigurno je pokrenuti višestruko.
 #
 # NAPOMENA: koristimo bcrypt direktno (ne passlib) jer passlib
@@ -37,14 +37,17 @@ logger = logging.getLogger(__name__)
 # ---- Seed podaci ------------------------------------------------
 # U produkciji ovi podaci NE BI postojali ovdje (posebno lozinke).
 # Ovo je ISKLJUČIVO za development okruženje.
-ADMIN_EMAIL = "admin@pl.local"
+ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 
 DEMO_CLUB_NAME = "Behemot"
 DEMO_CLUB_CITY = "Zadar"
+DEMO_CLUB_USERNAME = "behemot"
+DEMO_CLUB_PASSWORD = "klub123"
 
-CLUB_USER_EMAIL = "klub@pl.local"
-CLUB_USER_PASSWORD = "klub123"
+
+def _hash_pw(plain: str) -> str:
+    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt()).decode()
 
 
 async def seed(session: AsyncSession) -> None:
@@ -64,46 +67,47 @@ async def seed(session: AsyncSession) -> None:
     if club is None:
         club = Club(name=DEMO_CLUB_NAME, city=DEMO_CLUB_CITY)
         session.add(club)
-        # flush šalje INSERT u bazu (ali ne commitira) tako da
-        # club.id bude dostupan za club usera u koraku 3.
         await session.flush()
         logger.info("Kreiran klub: %s (id=%s)", club.name, club.id)
     else:
         logger.info("Klub '%s' već postoji — preskačem.", club.name)
 
     # -- 2. Admin user --
-    result = await session.execute(select(User).where(User.email == ADMIN_EMAIL))
+    result = await session.execute(
+        select(User).where(User.username == ADMIN_USERNAME)
+    )
     admin = result.scalar_one_or_none()
 
     if admin is None:
         admin = User(
-            email=ADMIN_EMAIL,
-            password_hash=_bcrypt.hashpw(ADMIN_PASSWORD.encode(), _bcrypt.gensalt()).decode(),
+            username=ADMIN_USERNAME,
+            password_hash=_hash_pw(ADMIN_PASSWORD),
             role="admin",
-            club_id=None,  # admin ne pripada nijednom klubu
+            club_id=None,
         )
         session.add(admin)
-        logger.info("Kreiran admin: %s", admin.email)
+        logger.info("Kreiran admin: %s", admin.username)
     else:
-        logger.info("Admin '%s' već postoji — preskačem.", admin.email)
+        logger.info("Admin '%s' već postoji — preskačem.", admin.username)
 
     # -- 3. Club user (za demo klub) --
-    result = await session.execute(select(User).where(User.email == CLUB_USER_EMAIL))
+    result = await session.execute(
+        select(User).where(User.username == DEMO_CLUB_USERNAME)
+    )
     club_user = result.scalar_one_or_none()
 
     if club_user is None:
         club_user = User(
-            email=CLUB_USER_EMAIL,
-            password_hash=_bcrypt.hashpw(CLUB_USER_PASSWORD.encode(), _bcrypt.gensalt()).decode(),
+            username=DEMO_CLUB_USERNAME,
+            password_hash=_hash_pw(DEMO_CLUB_PASSWORD),
             role="club",
             club_id=club.id,
         )
         session.add(club_user)
-        logger.info("Kreiran club user: %s (club=%s)", club_user.email, club.name)
+        logger.info("Kreiran club user: %s (club=%s)", club_user.username, club.name)
     else:
-        logger.info("Club user '%s' već postoji — preskačem.", club_user.email)
+        logger.info("Club user '%s' već postoji — preskačem.", club_user.username)
 
-    # Commit svih promjena odjednom (atomarno).
     await session.commit()
     logger.info("Seed završen uspješno!")
 
