@@ -33,6 +33,7 @@ from app.core.errors import AppError, app_error_handler
 from app.core.logging import setup_logging
 from app.routers.auth import router as auth_router
 from app.routers.clubs import router as clubs_router
+from app.routers.competitions import router as competitions_router
 from app.routers.health import router as health_router
 from app.routers.lifters import router as lifters_router
 
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/auth", tags=["auth"])
     app.include_router(clubs_router, prefix="/clubs", tags=["clubs"])
     app.include_router(lifters_router, prefix="/clubs/{club_id}/lifters", tags=["lifters"])
+    app.include_router(competitions_router, prefix="/competitions", tags=["competitions"])
 
     logger.info("Aplikacija kreirana (env=%s)", settings.ENV)
     return app
