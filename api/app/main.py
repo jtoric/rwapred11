@@ -34,6 +34,7 @@ from app.core.logging import setup_logging
 from app.routers.auth import router as auth_router
 from app.routers.clubs import router as clubs_router
 from app.routers.health import router as health_router
+from app.routers.lifters import router as lifters_router
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router, prefix="/health", tags=["health"])
     app.include_router(auth_router, prefix="/auth", tags=["auth"])
     app.include_router(clubs_router, prefix="/clubs", tags=["clubs"])
+    app.include_router(lifters_router, prefix="/clubs/{club_id}/lifters", tags=["lifters"])
 
     logger.info("Aplikacija kreirana (env=%s)", settings.ENV)
     return app
