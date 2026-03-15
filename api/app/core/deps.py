@@ -7,6 +7,7 @@
 # Dependencije u ovom modulu:
 #   get_db            — DB sesija po requestu
 #   get_current_user  — izvlači korisnika iz JWT tokena
+#   require_role      — factory: propušta samo navedene role
 # =============================================================
 
 from typing import AsyncGenerator
@@ -75,3 +76,27 @@ async def get_current_user(
         raise AppError("invalid_credentials", "Korisnik ne postoji ili je deaktiviran", 401)
 
     return user
+
+
+def require_role(*allowed_roles: str):
+    """
+    Factory dependency: propušta samo korisnike s navedenom rolom.
+
+    Korištenje:
+      @router.post("/")
+      async def create_club(admin: User = Depends(require_role("admin"))):
+          ...
+
+      @router.get("/")
+      async def list_clubs(user: User = Depends(require_role("admin", "club"))):
+          ...
+
+    Ako korisnik nema odgovarajuću rolu → 403 Forbidden.
+    """
+
+    def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise AppError("forbidden", "Nemate dozvolu za ovu akciju", 403)
+        return current_user
+
+    return checker
