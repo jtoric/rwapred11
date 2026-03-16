@@ -22,6 +22,8 @@ from app.core.deps import get_db
 from app.core.security import hash_password
 from app.main import app as fastapi_app
 from app.models.club import Club
+from app.models.competition import Competition
+from app.models.lifter import Lifter
 from app.models.user import User
 
 # --- Test engine (SQLite in-memory) ---
@@ -149,6 +151,42 @@ async def inactive_user(db: AsyncSession) -> User:
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@pytest.fixture
+async def lifter(db: AsyncSession, club_and_user) -> Lifter:
+    """Natjecatelj u TestClub-u za testove."""
+    club, _ = club_and_user
+    from datetime import date
+    l = Lifter(
+        first_name="Marko",
+        last_name="Markić",
+        birth_date=date(2000, 1, 15),
+        gender="M",
+        club_id=club.id,
+    )
+    db.add(l)
+    await db.commit()
+    await db.refresh(l)
+    return l
+
+
+@pytest.fixture
+async def competition(db: AsyncSession) -> Competition:
+    """Natjecanje s rokovima u budućnosti za testove."""
+    from datetime import date, datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    comp = Competition(
+        name="Test Kup",
+        date=date(2027, 6, 1),
+        location="Zagreb",
+        prelim_deadline=now + timedelta(days=30),
+        final_deadline=now + timedelta(days=60),
+    )
+    db.add(comp)
+    await db.commit()
+    await db.refresh(comp)
+    return comp
 
 
 async def auth_header(client: AsyncClient, username: str, password: str) -> dict:
