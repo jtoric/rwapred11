@@ -62,3 +62,16 @@ async def update_registration(
     return await registration_service.update_registration(
         db, comp_id, reg_id, body, user,
     )
+
+
+@router.post("/{reg_id}/withdraw", response_model=RegistrationResponse)
+async def withdraw_registration(
+    comp_id: int,
+    reg_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("admin", "club")),
+):
+    """Odjava natjecatelja s natjecanja (soft delete)."""
+    return await registration_service.withdraw_registration(
+        db, comp_id, reg_id, user,
+    )

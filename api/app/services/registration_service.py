@@ -87,6 +87,28 @@ async def update_registration(
     return reg
 
 
+async def withdraw_registration(
+    db: AsyncSession, comp_id: int, reg_id: int, current_user: User,
+) -> Registration:
+    """Odjavi natjecatelja (soft delete: status → withdrawn)."""
+    reg = await registration_repo.get_by_id(db, reg_id)
+    if not reg or reg.competition_id != comp_id:
+        raise AppError("not_found", "Prijava nije pronađena", 404)
+    if reg.status == "withdrawn":
+        raise AppError("already_withdrawn", "Već odjavljen", 400)
+
+    _check_lifter_ownership(reg, current_user)
+
+    comp = await _get_competition_or_404(db, comp_id)
+    phase = get_competition_phase(comp)
+    if phase == Phase.CLOSED:
+        raise AppError("deadline_passed", "Izmjene nisu moguće nakon finalnog roka", 400)
+
+    reg.status = "withdrawn"
+    await db.flush()
+    return reg
+
+
 # --- Interni helperi ---
 
 async def _get_competition_or_404(db: AsyncSession, comp_id: int):
