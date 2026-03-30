@@ -317,3 +317,118 @@ async def test_update_category_closed(
     )
     assert resp.status_code == 400
     assert resp.json()["code"] == "deadline_passed"
+
+
+# ---- Odjava (withdraw) ------------------------------------------------
+
+@freeze_time("2026-04-01 10:00:00")
+async def test_withdraw_open(
+    client: AsyncClient, club_and_user, lifter, competition,
+):
+    """Odjava u OPEN fazi — 200, status withdrawn."""
+    headers = await auth_header(client, "testclub", "klub123")
+    create_resp = await client.post(
+        f"/competitions/{competition.id}/registrations/",
+        json={"lifter_id": lifter.id, "category": "93", "total": 500},
+        headers=headers,
+    )
+    reg_id = create_resp.json()["id"]
+
+    resp = await client.post(
+        f"/competitions/{competition.id}/registrations/{reg_id}/withdraw",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "withdrawn"
+
+
+@freeze_time("2026-04-20 10:00:00")
+async def test_withdraw_prelim_passed(
+    client: AsyncClient, club_and_user, lifter, competition, db,
+):
+    """Odjava u PRELIM_PASSED fazi — 200 (dozvoljeno)."""
+    from app.models.registration import Registration
+    reg = Registration(
+        lifter_id=lifter.id, competition_id=competition.id,
+        category="93", total=500,
+    )
+    db.add(reg)
+    await db.commit()
+    await db.refresh(reg)
+
+    headers = await auth_header(client, "testclub", "klub123")
+    resp = await client.post(
+        f"/competitions/{competition.id}/registrations/{reg.id}/withdraw",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "withdrawn"
+
+
+@freeze_time("2026-05-10 10:00:00")
+async def test_withdraw_closed(
+    client: AsyncClient, club_and_user, lifter, competition, db,
+):
+    """Odjava u CLOSED fazi — 400 deadline_passed."""
+    from app.models.registration import Registration
+    reg = Registration(
+        lifter_id=lifter.id, competition_id=competition.id,
+        category="93", total=500,
+    )
+    db.add(reg)
+    await db.commit()
+    await db.refresh(reg)
+
+    headers = await auth_header(client, "testclub", "klub123")
+    resp = await client.post(
+        f"/competitions/{competition.id}/registrations/{reg.id}/withdraw",
+        headers=headers,
+    )
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "deadline_passed"
+
+
+@freeze_time("2026-04-01 10:00:00")
+async def test_withdraw_already_withdrawn(
+    client: AsyncClient, club_and_user, lifter, competition,
+):
+    """Ponovna odjava već odjavljenog — 400 already_withdrawn."""
+    headers = await auth_header(client, "testclub", "klub123")
+    create_resp = await client.post(
+        f"/competitions/{competition.id}/registrations/",
+        json={"lifter_id": lifter.id, "category": "93", "total": 500},
+        headers=headers,
+    )
+    reg_id = create_resp.json()["id"]
+
+    await client.post(
+        f"/competitions/{competition.id}/registrations/{reg_id}/withdraw",
+        headers=headers,
+    )
+    resp = await client.post(
+        f"/competitions/{competition.id}/registrations/{reg_id}/withdraw",
+        headers=headers,
+    )
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "already_withdrawn"
+
+
+@freeze_time("2026-04-01 10:00:00")
+async def test_withdraw_other_clubs_registration(
+    client: AsyncClient, club_and_user, club_b_and_user, lifter, competition,
+):
+    """Club ne smije odjaviti natjecatelja drugog kluba — 403."""
+    headers_a = await auth_header(client, "testclub", "klub123")
+    create_resp = await client.post(
+        f"/competitions/{competition.id}/registrations/",
+        json={"lifter_id": lifter.id, "category": "93", "total": 500},
+        headers=headers_a,
+    )
+    reg_id = create_resp.json()["id"]
+
+    headers_b = await auth_header(client, "rivalclub", "rival123")
+    resp = await client.post(
+        f"/competitions/{competition.id}/registrations/{reg_id}/withdraw",
+        headers=headers_b,
+    )
+    assert resp.status_code == 403
