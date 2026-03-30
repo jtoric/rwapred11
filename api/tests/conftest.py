@@ -173,15 +173,19 @@ async def lifter(db: AsyncSession, club_and_user) -> Lifter:
 
 @pytest.fixture
 async def competition(db: AsyncSession) -> Competition:
-    """Natjecanje s rokovima u budućnosti za testove."""
-    from datetime import date, datetime, timezone, timedelta
-    now = datetime.now(timezone.utc)
+    """Natjecanje s fiksnim rokovima za freezegun testove.
+
+    Rokovi:
+      prelim_deadline = 2026-04-15  (OPEN prije, PRELIM_PASSED nakon)
+      final_deadline  = 2026-05-01  (CLOSED nakon)
+    """
+    from datetime import date, datetime, timezone
     comp = Competition(
         name="Test Kup",
         date=date(2027, 6, 1),
         location="Zagreb",
-        prelim_deadline=now + timedelta(days=30),
-        final_deadline=now + timedelta(days=60),
+        prelim_deadline=datetime(2026, 4, 15, tzinfo=timezone.utc),
+        final_deadline=datetime(2026, 5, 1, tzinfo=timezone.utc),
     )
     db.add(comp)
     await db.commit()

@@ -24,10 +24,23 @@ class Phase(str, Enum):
 
 
 def get_competition_phase(competition: Competition) -> Phase:
-    """Odredi fazu natjecanja prema trenutnom vremenu."""
+    """Odredi fazu natjecanja prema trenutnom vremenu.
+
+    Usporedba koristi UTC. Ako su rokovi naive (SQLite u testovima),
+    tretiramo ih kao UTC.
+    """
     now = datetime.now(timezone.utc)
-    if now < competition.prelim_deadline:
+    prelim = competition.prelim_deadline
+    final = competition.final_deadline
+
+    # SQLite ne čuva tzinfo — dodaj UTC ako nedostaje
+    if prelim.tzinfo is None:
+        prelim = prelim.replace(tzinfo=timezone.utc)
+    if final.tzinfo is None:
+        final = final.replace(tzinfo=timezone.utc)
+
+    if now < prelim:
         return Phase.OPEN
-    if now < competition.final_deadline:
+    if now < final:
         return Phase.PRELIM_PASSED
     return Phase.CLOSED
