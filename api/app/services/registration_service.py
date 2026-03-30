@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.core.phases import Phase, get_competition_phase
 from app.models.registration import Registration
 from app.models.user import User
 from app.repositories import competition_repo, lifter_repo, registration_repo
@@ -40,7 +41,11 @@ async def create_registration(
     db: AsyncSession, comp_id: int, body: RegistrationCreate, current_user: User,
 ) -> Registration:
     """Kreiraj prijavu s ownership provjerom i duplikat zaštitom."""
-    await _get_competition_or_404(db, comp_id)
+    comp = await _get_competition_or_404(db, comp_id)
+
+    phase = get_competition_phase(comp)
+    if phase != Phase.OPEN:
+        raise AppError("deadline_passed", "Rok za nove prijave je istekao", 400)
 
     lifter = await lifter_repo.get_by_id(db, body.lifter_id)
     if not lifter:
@@ -70,6 +75,11 @@ async def update_registration(
     body: RegistrationUpdate, current_user: User,
 ) -> Registration:
     """Ažuriraj prijavu (kategorija, total) s ownership provjerom."""
+    comp = await _get_competition_or_404(db, comp_id)
+    phase = get_competition_phase(comp)
+    if phase == Phase.CLOSED:
+        raise AppError("deadline_passed", "Izmjene nisu moguće nakon finalnog roka", 400)
+
     reg = await get_registration(db, comp_id, reg_id, current_user)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(reg, field, value)
