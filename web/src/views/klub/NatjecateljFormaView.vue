@@ -9,6 +9,8 @@ import {
   azurirajNatjecatelja,
 } from '@/services/natjecatelji'
 import { neprazno, validnaDuljina, validanDatumProslost } from '@/utils/validacija'
+import FormaPolje from '@/components/FormaPolje.vue'
+import Gumb from '@/components/Gumb.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -90,41 +92,23 @@ async function spremi(): Promise<void> {
     <h1>{{ jeUredi ? 'Uredi natjecatelja' : 'Novi natjecatelj' }}</h1>
 
     <form class="forma" @submit.prevent="spremi">
-      <div class="polje">
-        <label for="ime">Ime</label>
-        <input id="ime" v-model="ime" type="text" maxlength="80" />
-        <span v-if="greske.ime" class="greska-tekst">{{ greske.ime }}</span>
-      </div>
-
-      <div class="polje">
-        <label for="prezime">Prezime</label>
-        <input id="prezime" v-model="prezime" type="text" maxlength="80" />
-        <span v-if="greske.prezime" class="greska-tekst">{{ greske.prezime }}</span>
-      </div>
-
-      <div class="polje">
-        <label for="datum">Datum rođenja</label>
-        <input id="datum" v-model="datumRodenja" type="date" />
-        <span v-if="greske.datumRodenja" class="greska-tekst">{{ greske.datumRodenja }}</span>
-      </div>
+      <FormaPolje oznaka="Ime" v-model="ime" :greska="greske.ime" :obavezno="true" />
+      <FormaPolje oznaka="Prezime" v-model="prezime" :greska="greske.prezime" :obavezno="true" />
+      <FormaPolje oznaka="Datum rođenja" v-model="datumRodenja" vrsta="date" :greska="greske.datumRodenja" :obavezno="true" />
 
       <div class="polje">
         <label>Spol</label>
         <div class="radio-grupa">
-          <label class="radio">
-            <input v-model="spol" type="radio" value="M" /> Muški
-          </label>
-          <label class="radio">
-            <input v-model="spol" type="radio" value="F" /> Ženski
-          </label>
+          <label class="radio"><input v-model="spol" type="radio" value="M" /> Muški</label>
+          <label class="radio"><input v-model="spol" type="radio" value="F" /> Ženski</label>
         </div>
       </div>
 
       <div class="akcije">
-        <RouterLink to="/klub/natjecatelji" class="gumb-sekundarni">Odustani</RouterLink>
-        <button type="submit" class="gumb-primarni" :disabled="ucitava">
-          {{ ucitava ? 'Spremanje...' : 'Spremi' }}
-        </button>
+        <RouterLink to="/klub/natjecatelji">
+          <Gumb vrsta="sekundarni">Odustani</Gumb>
+        </RouterLink>
+        <Gumb tip="submit" :ucitava="ucitava">Spremi</Gumb>
       </div>
     </form>
   </div>
