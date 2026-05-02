@@ -9,6 +9,8 @@ import KlubPocetnaView from '@/views/klub/KlubPocetnaView.vue'
 import KlubNatjecateljiView from '@/views/klub/KlubNatjecateljiView.vue'
 import NatjecateljFormaView from '@/views/klub/NatjecateljFormaView.vue'
 import KlubPrijaveView from '@/views/klub/KlubPrijaveView.vue'
+import NatjecanjaView from '@/views/klub/NatjecanjaView.vue'
+import PrijavaFormaView from '@/views/klub/PrijavaFormaView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -43,6 +45,8 @@ const router = createRouter({
         { path: 'natjecatelji', component: KlubNatjecateljiView },
         { path: 'natjecatelji/novi', component: NatjecateljFormaView },
         { path: 'natjecatelji/:id/uredi', component: NatjecateljFormaView },
+        { path: 'natjecanja', component: NatjecanjaView },
+        { path: 'natjecanja/:compId/prijava', component: PrijavaFormaView },
         { path: 'prijave', component: KlubPrijaveView },
       ],
     },
