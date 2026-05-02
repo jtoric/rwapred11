@@ -1,4 +1,4 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import type { BackendGreska } from '@/types/api'
 
 export class ApiGreska extends Error {
@@ -22,17 +22,49 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Singleton — sprječava paralelne refreshove (više simultanih 401 odgovora
+// ne smije pokrenuti više od jednog refresh poziva)
+let osvjezavanjeUTijeku: Promise<void> | null = null
+
 api.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response) {
-      const data = error.response.data as Partial<BackendGreska>
+  async (error: unknown) => {
+    if (!axios.isAxiosError(error) || !error.response) throw error
+
+    const status = error.response.status
+    const data = error.response.data as Partial<BackendGreska>
+
+    // Ako nije 401, ili je auth endpoint (login/refresh ne smiju triggerati retry)
+    const url = error.config?.url ?? ''
+    const jeAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh')
+    if (status !== 401 || jeAuthEndpoint) {
       throw new ApiGreska(
         data.code ?? 'unknown_error',
         data.message ?? error.message,
-        error.response.status,
+        status,
       )
     }
-    throw error
+
+    // 401 na zaštićenom endpointu — pokušaj refresh
+    try {
+      if (!osvjezavanjeUTijeku) {
+        // Dynamic import izbjegava circular dependency s auth storeom
+        const { useAuthStore } = await import('@/stores/auth')
+        osvjezavanjeUTijeku = useAuthStore()
+          .osvjeziToken()
+          .finally(() => {
+            osvjezavanjeUTijeku = null
+          })
+      }
+      await osvjezavanjeUTijeku
+
+      // Ponovi originalni zahtjev s novim tokenom
+      return api.request(error.config!)
+    } catch {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      window.location.href = '/prijava'
+      throw new ApiGreska('session_expired', 'Sesija je istekla.', 401)
+    }
   },
 )

@@ -29,6 +29,19 @@ export const useAuthStore = defineStore('auth', () => {
     trenutniKorisnik.value = data
   }
 
+  async function osvjeziToken(): Promise<void> {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) throw new Error('Nema refresh tokena')
+    const { data } = await api.post<TokenOdgovor>(
+      '/auth/refresh',
+      { refresh_token: refreshToken },
+      { headers: { Authorization: '' } }, // ne šalji stari (možda istekli) access token
+    )
+    accessToken.value = data.access_token
+    localStorage.setItem('access_token', data.access_token)
+    localStorage.setItem('refresh_token', data.refresh_token)
+  }
+
   function logout(): void {
     trenutniKorisnik.value = null
     accessToken.value = null
@@ -36,5 +49,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token')
   }
 
-  return { user, isAuthenticated, isAdmin, isClub, login, logout, dohvatiMene }
+  return { user, isAuthenticated, isAdmin, isClub, login, logout, dohvatiMene, osvjeziToken }
 })
