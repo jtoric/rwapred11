@@ -27,6 +27,7 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.errors import AppError, app_error_handler
@@ -65,12 +66,21 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
-    # 3. Registracija globalnog error handlera.
+    # 3. CORS — mora biti registriran prije routera.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # 4. Registracija globalnog error handlera.
     #    Kad bilo koji endpoint baci AppError, FastAPI poziva
     #    app_error_handler umjesto defaultnog 500 odgovora.
     app.add_exception_handler(AppError, app_error_handler)
 
-    # 4. Uključivanje routera.
+    # 5. Uključivanje routera.
     #    prefix="/health" znači: svi endpointi iz health routera
     #    dobivaju prefix, pa @router.get("/") postaje GET /health.
     app.include_router(health_router, prefix="/health", tags=["health"])
