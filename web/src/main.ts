@@ -3,22 +3,28 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './styles/globalno.css'
+import { useObavijestiStore } from './stores/obavijesti'
+import { useAuthStore } from './stores/auth'
 
 const pinia = createPinia()
 const aplikacija = createApp(App)
 aplikacija.use(pinia)
-aplikacija.use(router)
 
-// Ako postoji token, dohvati korisnika PRIJE mounta da guard nikad ne vidi
-// nedefiniranog usera — token u localStorage, korisnik još nije učitan
+// Boot: dohvati korisnika PRIJE instalacije routera da guard vidi ispravno stanje
 if (localStorage.getItem('access_token')) {
-  const { useAuthStore } = await import('./stores/auth')
   try {
-    await useAuthStore().dohvatiMene()
+    await useAuthStore(pinia).dohvatiMene()
   } catch {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
   }
+}
+
+aplikacija.use(router)
+
+aplikacija.config.errorHandler = (err) => {
+  const poruka = err instanceof Error ? err.message : 'Neočekivana greška.'
+  useObavijestiStore(pinia).greska(poruka)
 }
 
 aplikacija.mount('#app')

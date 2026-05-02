@@ -2,25 +2,25 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useObavijestiStore } from '@/stores/obavijesti'
 import { ApiGreska } from '@/services/api'
 
 const router = useRouter()
 const auth = useAuthStore()
+const obavijesti = useObavijestiStore()
 
 const korisnickoIme = ref('')
 const lozinka = ref('')
-const greska = ref('')
 const ucitava = ref(false)
 
 async function prijava(): Promise<void> {
-  greska.value = ''
   ucitava.value = true
   try {
     await auth.login(korisnickoIme.value, lozinka.value)
     const odrediste = auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
     await router.push(odrediste)
   } catch (e) {
-    greska.value = e instanceof ApiGreska ? e.message : 'Greška pri prijavi.'
+    obavijesti.greska(e instanceof ApiGreska ? e.message : 'Greška pri prijavi.')
   } finally {
     ucitava.value = false
   }
@@ -33,8 +33,6 @@ async function prijava(): Promise<void> {
     <p class="podnaslov">Sustav za registraciju powerlifting natjecanja</p>
 
     <form class="forma" @submit.prevent="prijava">
-      <div v-if="greska" class="poruka-greska">{{ greska }}</div>
-
       <div class="polje">
         <label for="korisnicko-ime">Korisničko ime</label>
         <input
@@ -96,14 +94,6 @@ h1 {
   padding: 2rem;
   background: var(--boja-povrsina);
   border: 1px solid var(--boja-rub);
-}
-
-.poruka-greska {
-  padding: 0.75rem 1rem;
-  background: color-mix(in srgb, var(--boja-akcent) 15%, transparent);
-  border: 1px solid var(--boja-akcent);
-  color: var(--boja-akcent);
-  font-size: 0.8rem;
 }
 
 .polje {

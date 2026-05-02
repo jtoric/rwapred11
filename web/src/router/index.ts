@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import PrijavaView from '@/views/PrijavaView.vue'
-import NadzornaPlocaView from '@/views/NadzornaPlocaView.vue'
 import NepoznatoView from '@/views/NepoznatoView.vue'
 import AdminPocetnaView from '@/views/admin/AdminPocetnaView.vue'
 import AdminKluboviView from '@/views/admin/AdminKluboviView.vue'
@@ -15,17 +14,16 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/prijava',
+      redirect: () => {
+        const auth = useAuthStore()
+        if (!auth.isAuthenticated) return '/prijava'
+        return auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
+      },
     },
     {
       path: '/prijava',
       component: PrijavaView,
       meta: { layout: 'gost', javno: true },
-    },
-    {
-      path: '/pocetna',
-      component: NadzornaPlocaView,
-      meta: { layout: 'aplikacija' },
     },
     {
       path: '/admin',
@@ -56,14 +54,13 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  if (to.meta.javno) return true
+  // Prijavljeni korisnik na javnoj stranici → preusmjeri na svoju početnu
+  if (to.meta.javno) {
+    if (auth.isAuthenticated) return auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
+    return true
+  }
 
   if (!auth.isAuthenticated) return '/prijava'
-
-  // Prijavljeni korisnik na login stranici → preusmjeri na svoju početnu
-  if (to.path === '/prijava') {
-    return auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
-  }
 
   // Provjera uloge za zaštićene sekcije
   if (to.meta.uloga === 'admin' && !auth.isAdmin) return '/klub/pocetna'
