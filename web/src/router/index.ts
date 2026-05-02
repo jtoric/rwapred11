@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import PrijavaView from '@/views/PrijavaView.vue'
 import NadzornaPlocaView from '@/views/NadzornaPlocaView.vue'
 import NepoznatoView from '@/views/NepoznatoView.vue'
@@ -8,14 +9,6 @@ import AdminNatjecanjaView from '@/views/admin/AdminNatjecanjaView.vue'
 import KlubPocetnaView from '@/views/klub/KlubPocetnaView.vue'
 import KlubNatjecateljiView from '@/views/klub/KlubNatjecateljiView.vue'
 import KlubPrijaveView from '@/views/klub/KlubPrijaveView.vue'
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    layout?: 'gost' | 'aplikacija'
-    javno?: boolean
-    uloga?: 'admin' | 'klub'
-  }
-}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -58,6 +51,25 @@ const router = createRouter({
       meta: { layout: 'gost', javno: true },
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+
+  if (to.meta.javno) return true
+
+  if (!auth.isAuthenticated) return '/prijava'
+
+  // Prijavljeni korisnik na login stranici → preusmjeri na svoju početnu
+  if (to.path === '/prijava') {
+    return auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
+  }
+
+  // Provjera uloge za zaštićene sekcije
+  if (to.meta.uloga === 'admin' && !auth.isAdmin) return '/klub/pocetna'
+  if (to.meta.uloga === 'klub' && !auth.isClub) return '/admin/pocetna'
+
+  return true
 })
 
 export default router
