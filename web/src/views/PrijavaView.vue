@@ -1,5 +1,30 @@
 <script setup lang="ts">
-// Stranica za prijavu — P7-C1 skeleton (bez logike)
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { ApiGreska } from '@/services/api'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const korisnickoIme = ref('')
+const lozinka = ref('')
+const greska = ref('')
+const ucitava = ref(false)
+
+async function prijava(): Promise<void> {
+  greska.value = ''
+  ucitava.value = true
+  try {
+    await auth.login(korisnickoIme.value, lozinka.value)
+    const odrediste = auth.isAdmin ? '/admin/pocetna' : '/klub/pocetna'
+    await router.push(odrediste)
+  } catch (e) {
+    greska.value = e instanceof ApiGreska ? e.message : 'Greška pri prijavi.'
+  } finally {
+    ucitava.value = false
+  }
+}
 </script>
 
 <template>
@@ -7,16 +32,34 @@
     <h1>IRON PRESS</h1>
     <p class="podnaslov">Sustav za registraciju powerlifting natjecanja</p>
 
-    <form class="forma">
+    <form class="forma" @submit.prevent="prijava">
+      <div v-if="greska" class="poruka-greska">{{ greska }}</div>
+
       <div class="polje">
         <label for="korisnicko-ime">Korisničko ime</label>
-        <input id="korisnicko-ime" type="text" placeholder="korisnik" autocomplete="username" />
+        <input
+          id="korisnicko-ime"
+          v-model="korisnickoIme"
+          type="text"
+          placeholder="korisnik"
+          autocomplete="username"
+          required
+        />
       </div>
       <div class="polje">
         <label for="lozinka">Lozinka</label>
-        <input id="lozinka" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <input
+          id="lozinka"
+          v-model="lozinka"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
       </div>
-      <button type="submit" class="gumb-prijava">PRIJAVA</button>
+      <button type="submit" class="gumb-prijava" :disabled="ucitava">
+        {{ ucitava ? 'PRIJAVA...' : 'PRIJAVA' }}
+      </button>
     </form>
   </div>
 </template>
@@ -53,6 +96,14 @@ h1 {
   padding: 2rem;
   background: var(--boja-povrsina);
   border: 1px solid var(--boja-rub);
+}
+
+.poruka-greska {
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--boja-akcent) 15%, transparent);
+  border: 1px solid var(--boja-akcent);
+  color: var(--boja-akcent);
+  font-size: 0.8rem;
 }
 
 .polje {
@@ -98,8 +149,13 @@ input::placeholder {
   margin-top: 0.5rem;
 }
 
-.gumb-prijava:hover {
+.gumb-prijava:hover:not(:disabled) {
   background: var(--boja-tekst);
   color: var(--boja-pozadina);
+}
+
+.gumb-prijava:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
