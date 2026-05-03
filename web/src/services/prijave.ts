@@ -31,3 +31,10 @@ export async function odjaviPrijavu(compId: number, id: number): Promise<Prijava
   )
   return data
 }
+
+export async function reakivirajPrijavu(compId: number, id: number): Promise<Prijava> {
+  const { data } = await api.post<Prijava>(
+    `/competitions/${compId}/registrations/${id}/reactivate`,
+  )
+  return data
+}

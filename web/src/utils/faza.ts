@@ -11,19 +11,13 @@ export function izracunajFazu(natjecanje: Natjecanje, sada = new Date()): Faza {
 
 export function dozvoljeno(
   faza: Faza,
-  akcija: 'kreiraj' | 'promijeni-kategoriju' | 'odjavi',
+  akcija: 'kreiraj' | 'promijeni-kategoriju' | 'odjavi' | 'ponovo-prijavi',
 ): { ok: boolean; razlog?: string } {
   if (akcija === 'kreiraj') {
     return faza === 'OPEN'
       ? { ok: true }
       : { ok: false, razlog: 'Prijave su zatvorene.' }
   }
-  if (akcija === 'promijeni-kategoriju') {
-    return faza !== 'CLOSED'
-      ? { ok: true }
-      : { ok: false, razlog: 'Natjecanje je zaključano.' }
-  }
-  // odjavi
   return faza !== 'CLOSED'
     ? { ok: true }
     : { ok: false, razlog: 'Natjecanje je zaključano.' }

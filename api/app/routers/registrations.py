@@ -75,3 +75,16 @@ async def withdraw_registration(
     return await registration_service.withdraw_registration(
         db, comp_id, reg_id, user,
     )
+
+
+@router.post("/{reg_id}/reactivate", response_model=RegistrationResponse)
+async def reactivate_registration(
+    comp_id: int,
+    reg_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role("admin", "club")),
+):
+    """Ponovna prijava natjecatelja (reaktivacija povučene prijave)."""
+    return await registration_service.reactivate_registration(
+        db, comp_id, reg_id, user,
+    )

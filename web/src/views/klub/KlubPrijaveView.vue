@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useObavijestiStore } from '@/stores/obavijesti'
 import { dohvatiNatjecanja } from '@/services/natjecanja'
-import { dohvatiPrijave, azurirajPrijavu, odjaviPrijavu } from '@/services/prijave'
+import { dohvatiPrijave, azurirajPrijavu, odjaviPrijavu, reakivirajPrijavu } from '@/services/prijave'
 import { izracunajFazu, dozvoljeno } from '@/utils/faza'
 import { KATEGORIJE_M, KATEGORIJE_F } from '@/types/prijava'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -59,13 +59,25 @@ async function spremiKategoriju(compId: number, prijava: Prijava): Promise<void>
 }
 
 async function odjavi(compId: number, prijava: Prijava): Promise<void> {
-  if (!confirm('Odjaviti natjecatelja?')) return
+  const ime = `${prijava.lifter.first_name} ${prijava.lifter.last_name}`
+  if (!confirm(`Odjaviti natjecatelja ${ime}?`)) return
   try {
     const azurirano = await odjaviPrijavu(compId, prijava.id)
     prijava.status = azurirano.status
-    obavijesti.uspjeh('Natjecatelj odjavljen.')
+    obavijesti.uspjeh(`${ime} odjavljen.`)
   } catch (e) {
     obavijesti.greska(e instanceof Error ? e.message : 'Greška pri odjavi.')
+  }
+}
+
+async function reakiviraj(compId: number, prijava: Prijava): Promise<void> {
+  const ime = `${prijava.lifter.first_name} ${prijava.lifter.last_name}`
+  try {
+    const azurirano = await reakivirajPrijavu(compId, prijava.id)
+    prijava.status = azurirano.status
+    obavijesti.uspjeh(`${ime} ponovo prijavljen.`)
+  } catch (e) {
+    obavijesti.greska(e instanceof Error ? e.message : 'Greška pri ponovnoj prijavi.')
   }
 }
 
@@ -98,6 +110,7 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
         <table class="tablica">
           <thead>
             <tr>
+              <th>Natjecatelj</th>
               <th>Kategorija</th>
               <th>Total</th>
               <th>Status</th>
@@ -107,6 +120,7 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
           </thead>
           <tbody>
             <tr v-for="p in g.prijave" :key="p.id">
+              <td>{{ p.lifter.first_name }} {{ p.lifter.last_name }}</td>
               <td>
                 <template v-if="uredivanjeId === p.id">
                   <select v-model="novaKategorija" class="select-inline">
@@ -123,7 +137,7 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
                 {{ p.registered_at ? new Date(p.registered_at).toLocaleDateString('hr-HR') : '—' }}
               </td>
               <td class="akcije-celija">
-                <template v-if="p.status !== 'withdrawn'">
+                <template v-if="p.status === 'active'">
                   <template v-if="uredivanjeId === p.id">
                     <button class="akcija" @click="spremiKategoriju(g.natjecanje.id, p)">Spremi</button>
                     <button class="akcija" @click="uredivanjeId = null">Odustani</button>
@@ -146,6 +160,16 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
                       Odjavi
                     </button>
                   </template>
+                </template>
+                <template v-else>
+                  <button
+                    class="akcija"
+                    :disabled="!dozvoljeno(izracunajFazu(g.natjecanje), 'ponovo-prijavi').ok"
+                    :title="dozvoljeno(izracunajFazu(g.natjecanje), 'ponovo-prijavi').razlog"
+                    @click="reakiviraj(g.natjecanje.id, p)"
+                  >
+                    Ponovo prijavi
+                  </button>
                 </template>
               </td>
             </tr>
@@ -223,7 +247,6 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
 }
 
 .akcija {
-  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--boja-tekst-mute);

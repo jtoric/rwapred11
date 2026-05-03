@@ -44,6 +44,12 @@ class RegistrationUpdate(BaseModel):
         return v
 
 
+class LifterBrief(BaseModel):
+    first_name: str
+    last_name: str
+    model_config = {"from_attributes": True}
+
+
 class RegistrationResponse(BaseModel):
     """Odgovor s podacima o prijavi."""
     id: int
@@ -53,5 +59,6 @@ class RegistrationResponse(BaseModel):
     total: int
     status: str
     registered_at: datetime | None = None
+    lifter: LifterBrief
 
     model_config = {"from_attributes": True}

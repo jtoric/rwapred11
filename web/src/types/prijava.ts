@@ -15,6 +15,7 @@ export interface Prijava {
   total: number
   status: 'active' | 'withdrawn'
   registered_at: string | null
+  lifter: { first_name: string; last_name: string }
 }
 
 export interface PrijavaKreiranje {
