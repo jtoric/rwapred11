@@ -7,7 +7,11 @@ const store = useObavijestiStore()
 </script>
 
 <template>
-  <div :class="['obavijest', `obavijest--${props.obavijest.vrsta}`]" @click="store.ukloni(props.obavijest.id)">
+  <div
+    :class="['obavijest', `obavijest--${props.obavijest.vrsta}`]"
+    :data-testid="`obavijest-${props.obavijest.vrsta}`"
+    @click="store.ukloni(props.obavijest.id)"
+  >
     <span class="poruka">{{ props.obavijest.poruka }}</span>
     <button class="zatvori" aria-label="Zatvori">×</button>
   </div>

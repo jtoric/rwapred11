@@ -37,6 +37,7 @@ async function prijava(): Promise<void> {
         <label for="korisnicko-ime">Korisničko ime</label>
         <input
           id="korisnicko-ime"
+          data-testid="korisnicko-ime"
           v-model="korisnickoIme"
           type="text"
           placeholder="korisnik"
@@ -48,6 +49,7 @@ async function prijava(): Promise<void> {
         <label for="lozinka">Lozinka</label>
         <input
           id="lozinka"
+          data-testid="lozinka"
           v-model="lozinka"
           type="password"
           placeholder="••••••••"
@@ -55,7 +57,7 @@ async function prijava(): Promise<void> {
           required
         />
       </div>
-      <button type="submit" class="gumb-prijava" :disabled="ucitava">
+      <button type="submit" data-testid="submit" class="gumb-prijava" :disabled="ucitava">
         {{ ucitava ? 'PRIJAVA...' : 'PRIJAVA' }}
       </button>
     </form>
