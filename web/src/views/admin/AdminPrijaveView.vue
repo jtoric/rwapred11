@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useObavijestiStore } from '@/stores/obavijesti'
 import { dohvatiNatjecanje } from '@/services/natjecanja'
-import { dohvatiPrijave } from '@/services/prijave'
+import { dohvatiPrijave, odjaviPrijavu } from '@/services/prijave'
 import { dohvatiKlubove } from '@/services/klubovi'
 import { dohvatiNatjecatelje } from '@/services/natjecatelji'
 import { useFilteriPrijava, SVE_KATEGORIJE } from '@/composables/useFilteriPrijava'
@@ -11,6 +11,7 @@ import type { PrijavaProsirena } from '@/composables/useFilteriPrijava'
 import type { Klub } from '@/types/klub'
 import type { Natjecanje } from '@/types/natjecanje'
 import StatusBadge from '@/components/StatusBadge.vue'
+import Modal from '@/components/Modal.vue'
 
 const route = useRoute()
 const obavijesti = useObavijestiStore()
@@ -75,6 +76,45 @@ function formatirajDatum(d: string | null): string {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('hr-HR')
 }
+
+// --- Odjava modal ---
+const modalOtvoren = ref(false)
+const modalPrijava = ref<PrijavaProsirena | null>(null)
+const modalRazlog = ref('')
+const odjavaUTijeku = ref(false)
+
+function otvoriOdjavu(p: PrijavaProsirena): void {
+  modalPrijava.value = p
+  modalRazlog.value = ''
+  modalOtvoren.value = true
+}
+
+interface AdminLogEntry {
+  regId: number
+  razlog: string
+  ts: string
+}
+
+async function potvrdiOdjavu(): Promise<void> {
+  if (!modalPrijava.value) return
+  odjavaUTijeku.value = true
+  try {
+    const azurirano = await odjaviPrijavu(compId, modalPrijava.value.id)
+    modalPrijava.value.status = azurirano.status
+
+    // Razlog se ne šalje backendu — sprema se lokalno kao administrativni dnevnik
+    const log: AdminLogEntry[] = JSON.parse(localStorage.getItem('adminLog') ?? '[]') as AdminLogEntry[]
+    log.push({ regId: modalPrijava.value.id, razlog: modalRazlog.value, ts: new Date().toISOString() })
+    localStorage.setItem('adminLog', JSON.stringify(log))
+
+    obavijesti.uspjeh('Prijava odjavljena.')
+    modalOtvoren.value = false
+  } catch (e) {
+    obavijesti.greska(e instanceof Error ? e.message : 'Greška pri odjavi.')
+  } finally {
+    odjavaUTijeku.value = false
+  }
+}
 </script>
 
 <template>
@@ -130,6 +170,7 @@ function formatirajDatum(d: string | null): string {
               <th>Total</th>
               <th>Status</th>
               <th>Prijavljeno</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -140,6 +181,15 @@ function formatirajDatum(d: string | null): string {
               <td>{{ p.total }} kg</td>
               <td><StatusBadge :status="p.status" /></td>
               <td class="muted">{{ formatirajDatum(p.registered_at) }}</td>
+              <td>
+                <button
+                  v-if="p.status === 'active'"
+                  class="akcija akcija--opasnost"
+                  @click="otvoriOdjavu(p)"
+                >
+                  Odjavi
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -161,6 +211,27 @@ function formatirajDatum(d: string | null): string {
       </template>
     </template>
   </div>
+
+  <!-- Modal: odjava -->
+  <Modal v-model="modalOtvoren" naslov="Odjavi prijavu">
+    <template v-if="modalPrijava">
+      <p class="modal-info">
+        <strong>{{ modalPrijava.lifter.first_name }} {{ modalPrijava.lifter.last_name }}</strong>
+        &mdash; {{ modalPrijava.category }} kg &mdash; {{ modalPrijava.klub_naziv }}
+      </p>
+      <div class="polje">
+        <label for="razlog">Razlog odjave</label>
+        <textarea id="razlog" v-model="modalRazlog" class="textarea" rows="3" placeholder="Neobavezno..." />
+      </div>
+    </template>
+
+    <template #akcije>
+      <button class="pag-gumb" @click="modalOtvoren = false">Odustani</button>
+      <button class="gumb-opasnost" :disabled="odjavaUTijeku" @click="potvrdiOdjavu">
+        {{ odjavaUTijeku ? 'Odjava...' : 'Potvrdi odjavu' }}
+      </button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
@@ -255,4 +326,67 @@ function formatirajDatum(d: string | null): string {
 
 .pag-gumb:hover:not(:disabled) { color: var(--boja-tekst); border-color: var(--boja-tekst-mute); }
 .pag-gumb:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.akcija {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.akcija--opasnost { color: var(--boja-tekst-mute); }
+.akcija--opasnost:hover { color: var(--boja-akcent); }
+
+.modal-info {
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  background: var(--boja-pozadina);
+  border: 1px solid var(--boja-rub);
+}
+
+.polje {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.polje label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--boja-tekst-mute);
+}
+
+.textarea {
+  background: var(--boja-pozadina);
+  border: 1px solid var(--boja-rub);
+  color: var(--boja-tekst);
+  padding: 0.625rem 0.875rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--boja-akcent);
+}
+
+.gumb-opasnost {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: var(--boja-akcent);
+  border: 1px solid var(--boja-akcent);
+  cursor: pointer;
+}
+
+.gumb-opasnost:hover:not(:disabled) { background: var(--boja-akcent); color: var(--boja-tekst); }
+.gumb-opasnost:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
