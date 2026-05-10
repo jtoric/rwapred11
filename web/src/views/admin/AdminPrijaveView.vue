@@ -12,6 +12,7 @@ import type { Klub } from '@/types/klub'
 import type { Natjecanje } from '@/types/natjecanje'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Modal from '@/components/Modal.vue'
+import { uCsv, preuzmiCsv } from '@/utils/csv'
 
 const route = useRoute()
 const obavijesti = useObavijestiStore()
@@ -77,6 +78,23 @@ function formatirajDatum(d: string | null): string {
   return new Date(d).toLocaleDateString('hr-HR')
 }
 
+// --- CSV export ---
+function izvezCsv(): void {
+  const naziv = natjecanje.value?.name ?? 'prijave'
+  const datum = new Date().toISOString().slice(0, 10)
+  const redovi = filtrirane.value.map((p) => ({
+    id: p.id,
+    lifter: `${p.lifter.first_name} ${p.lifter.last_name}`,
+    klub: p.klub_naziv,
+    kategorija: p.category,
+    total: p.total,
+    status: p.status,
+    registered_at: p.registered_at ?? '',
+  }))
+  const sadrzaj = uCsv(redovi, ['id', 'lifter', 'klub', 'kategorija', 'total', 'status', 'registered_at'])
+  preuzmiCsv(`prijave-${naziv}-${datum}.csv`, sadrzaj)
+}
+
 // --- Odjava modal ---
 const modalOtvoren = ref(false)
 const modalPrijava = ref<PrijavaProsirena | null>(null)
@@ -124,6 +142,9 @@ async function potvrdiOdjavu(): Promise<void> {
         <RouterLink to="/admin/natjecanja" class="natrag">← Natjecanja</RouterLink>
         <h1>{{ natjecanje?.name ?? 'Prijave' }}</h1>
       </div>
+      <button v-if="!ucitava && filtrirane.length > 0" class="gumb-csv" @click="izvezCsv">
+        Izvezi CSV
+      </button>
     </div>
 
     <div v-if="ucitava" class="stanje-poruka muted">Učitavanje...</div>
@@ -253,6 +274,22 @@ async function potvrdiOdjavu(): Promise<void> {
 }
 
 .natrag:hover { color: var(--boja-tekst); }
+
+.gumb-csv {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: var(--boja-tekst-mute);
+  border: 1px solid var(--boja-rub);
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.gumb-csv:hover { color: var(--boja-tekst); border-color: var(--boja-tekst-mute); }
 
 .filteri {
   display: flex;
