@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useObavijestiStore } from '@/stores/obavijesti'
 import { dohvatiNatjecanje } from '@/services/natjecanja'
@@ -10,6 +10,7 @@ import { useFilteriPrijava, SVE_KATEGORIJE } from '@/composables/useFilteriPrija
 import type { PrijavaProsirena } from '@/composables/useFilteriPrijava'
 import type { Klub } from '@/types/klub'
 import type { Natjecanje } from '@/types/natjecanje'
+import { izracunajFazu, dozvoljeno } from '@/utils/faza'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Modal from '@/components/Modal.vue'
 import { uCsv, preuzmiCsv } from '@/utils/csv'
@@ -72,6 +73,10 @@ onMounted(async () => {
     ucitava.value = false
   }
 })
+
+const mozePrijava = computed(() =>
+  natjecanje.value ? dozvoljeno(izracunajFazu(natjecanje.value), 'odjavi') : { ok: false, razlog: 'Učitavanje...' },
+)
 
 function formatirajDatum(d: string | null): string {
   if (!d) return '—'
@@ -206,6 +211,8 @@ async function potvrdiOdjavu(): Promise<void> {
                 <button
                   v-if="p.status === 'active'"
                   class="akcija akcija--opasnost"
+                  :disabled="!mozePrijava.ok"
+                  :title="mozePrijava.razlog"
                   @click="otvoriOdjavu(p)"
                 >
                   Odjavi
