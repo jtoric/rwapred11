@@ -5,6 +5,7 @@ import NepoznatoView from '@/views/NepoznatoView.vue'
 import AdminPocetnaView from '@/views/admin/AdminPocetnaView.vue'
 import AdminKluboviView from '@/views/admin/AdminKluboviView.vue'
 import AdminNatjecanjaView from '@/views/admin/AdminNatjecanjaView.vue'
+import NatjecanjaFormaView from '@/views/admin/NatjecanjaFormaView.vue'
 import KlubPocetnaView from '@/views/klub/KlubPocetnaView.vue'
 import KlubNatjecateljiView from '@/views/klub/KlubNatjecateljiView.vue'
 import NatjecateljFormaView from '@/views/klub/NatjecateljFormaView.vue'
@@ -35,6 +36,8 @@ const router = createRouter({
         { path: 'pocetna', component: AdminPocetnaView },
         { path: 'klubovi', component: AdminKluboviView },
         { path: 'natjecanja', component: AdminNatjecanjaView },
+        { path: 'natjecanja/novo', component: NatjecanjaFormaView },
+        { path: 'natjecanja/:id/uredi', component: NatjecanjaFormaView },
       ],
     },
     {
