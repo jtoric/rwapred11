@@ -67,9 +67,10 @@ def create_app() -> FastAPI:
     )
 
     # 3. CORS — mora biti registriran prije routera.
+    #    Origini dolaze iz settings.cors_origins_list (env CORS_ORIGINS).
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_origins=settings.cors_origins_list,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
