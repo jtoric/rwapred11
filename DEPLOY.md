@@ -43,25 +43,6 @@ Railway automatski kreira bazu i interno je dostupna ostalim servisima u projekt
 
 Railway je kreirao servis iz tvog repoa, ali ne zna gdje je Python kod.
 
-### Nixpacks konfiguracija (obavezno)
-
-Railway koristi Nixpacks za automatski build. Kad je kod u poddirektoriju
-(`Projekt/api/`), Nixpacks ponekad ne detektira Python ispravno.
-Dodaj `nixpacks.toml` u `Projekt/api/`:
-
-```toml
-[phases.setup]
-nixPkgs = ["python311"]
-
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
-
-[start]
-cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-```
-
-Commitaj i pushaj — Railway će koristiti ovu konfiguraciju umjesto auto-detekcije.
-
 ### Root Directory
 
 **Settings** → **Root Directory**:
@@ -214,10 +195,11 @@ Invoke-WebRequest -Method OPTIONS "$api/auth/login" `
 
 ## 8. Česti problemi
 
-### Railway ne detektira Python
+### Railway ne detektira Python (Railpack greška)
 
-Provjeri da `Projekt/api/requirements.txt` postoji i da je committan u git.  
-Railway traži `requirements.txt` (ili `Pipfile` / `pyproject.toml`) za detekciju Python projekta.
+Uzrok je gotovo uvijek krivi **Root Directory**. Railpack mora vidjeti
+`requirements.txt` u korijenu direktorija koji builda.  
+Provjeri: **Settings** → **Root Directory** = `Projekt/api`.
 
 ### Build web-a prolazi lokalno ali pada na Railway
 
@@ -250,7 +232,8 @@ Alembic migracije se **ne pokreću automatski** — Railway ne zna za njih.
 
 ## 9. Produkcijski checklist
 
-- [ ] `Projekt/api/nixpacks.toml` committan u git
+- [ ] Root Directory za API servis postavljen na `Projekt/api`
+- [ ] Root Directory za Web servis postavljen na `Projekt/web`
 - [ ] `DATABASE_URL` ima prefiks `postgresql+asyncpg://`
 - [ ] `JWT_SECRET` nije `change-me-in-production`
 - [ ] `ENV=production` (Swagger na `/docs` nedostupan)
