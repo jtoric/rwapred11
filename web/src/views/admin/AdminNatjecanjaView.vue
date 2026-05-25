@@ -63,7 +63,7 @@ const NAZIV_FAZE: Record<string, string> = {
           <td>{{ n.location }}</td>
           <td>
             <span :class="['faza-badge', `faza-badge--${izracunajFazu(n).toLowerCase()}`]">
-              {{ NAZIV_FAZE[izracunajFazu(n)] }}
+              {{ NAZIV_FAZE[izracunajFazu(n)] ?? izracunajFazu(n) }}
             </span>
           </td>
           <td class="akcije-celija">

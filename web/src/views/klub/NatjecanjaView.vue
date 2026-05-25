@@ -25,9 +25,14 @@ function formatirajDatum(d: string): string {
   return new Date(d).toLocaleDateString('hr-HR')
 }
 
+const NAZIV_FAZE: Record<string, string> = {
+  OPEN: 'Otvoreno',
+  PRELIM_PASSED: 'Prijave zatvorene',
+  CLOSED: 'Zaključano',
+}
+
 function oznakeFaze(n: Natjecanje): string {
-  const faza = izracunajFazu(n)
-  return { OPEN: 'Otvoreno', PRELIM_PASSED: 'Prijave zatvorene', CLOSED: 'Zaključano' }[faza]
+  return NAZIV_FAZE[izracunajFazu(n)] ?? izracunajFazu(n)
 }
 </script>
 

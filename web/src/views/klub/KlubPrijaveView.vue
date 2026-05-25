@@ -28,7 +28,7 @@ onMounted(async () => {
     const rezultati = await Promise.all(
       natjecanja.map(async (n) => {
         const sve = await dohvatiPrijave(n.id)
-        return { natjecanje: n, prijave: sve.filter((p) => p.status !== 'withdrawn' || true) }
+        return { natjecanje: n, prijave: sve }
       }),
     )
     grupe.value = rezultati.filter((g) => g.prijave.length > 0)
@@ -81,13 +81,8 @@ async function reakiviraj(compId: number, prijava: Prijava): Promise<void> {
   }
 }
 
-function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly string[] {
-  const grupe2 = grupe.value.find((g) => g.natjecanje.id === natjecanje.id)
-  const p = grupe2?.prijave.find((p) => p.id === prijava.id)
-  if (!p) return []
-  return p.category.startsWith('1') || ['59','66','74','83','93','105'].includes(p.category)
-    ? KATEGORIJE_M
-    : KATEGORIJE_F
+function kategorijeZaPrijavu(prijava: Prijava): readonly string[] {
+  return (KATEGORIJE_M as readonly string[]).includes(prijava.category) ? KATEGORIJE_M : KATEGORIJE_F
 }
 </script>
 
@@ -124,7 +119,7 @@ function kategorijeZaPrijavu(prijava: Prijava, natjecanje: Natjecanje): readonly
               <td>
                 <template v-if="uredivanjeId === p.id">
                   <select v-model="novaKategorija" class="select-inline">
-                    <option v-for="k in kategorijeZaPrijavu(p, g.natjecanje)" :key="k" :value="k">
+                    <option v-for="k in kategorijeZaPrijavu(p)" :key="k" :value="k">
                       {{ k }} kg
                     </option>
                   </select>
